@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kairos Echo — Your Inner Mirror</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
+  <style>
+    body { background: linear-gradient(135deg, #0f172a, #1e2937); }
+    .glow-emerald { text-shadow: 0 0 20px rgb(16 185 129); }
+  </style>
+</head>
+<body class="min-h-screen text-white font-sans">
+  <div class="max-w-2xl mx-auto p-6">
+    <div class="text-center mb-8">
+      <h1 class="text-5xl font-light tracking-widest glow-emerald">KAIROS ECHO</h1>
+      <p class="text-emerald-300 mt-2 text-lg">A poetic mirror for your inner coherence</p>
+    </div>
+
+    <div class="bg-slate-900/80 backdrop-blur-xl rounded-3xl p-8 shadow-2xl border border-emerald-500/20">
+      <div class="flex gap-4 mb-6">
+        <button onclick="runSimulation()" class="flex-1 bg-emerald-600 hover:bg-emerald-500 py-4 rounded-2xl text-lg font-medium transition">RUN SIMULATION</button>
+        <button onclick="getTogalReflection()" class="flex-1 bg-slate-800 hover:bg-slate-700 py-4 rounded-2xl text-lg font-medium transition">TOGAL REFLECTION</button>
+        <button onclick="getTrekchoReminder()" class="flex-1 bg-slate-800 hover:bg-slate-700 py-4 rounded-2xl text-lg font-medium transition">TREKCHÖ REMINDER</button>
+      </div>
+
+      <div id="output" class="min-h-96 bg-black/50 rounded-2xl p-6 font-mono text-sm leading-relaxed overflow-auto"></div>
+    </div>
+
+    <div class="text-center text-xs text-slate-400 mt-8">
+      Short moments. Many times.<br>
+      <a href="https://github.com/aruintelligence/kairos-echo-reflection-tool" target="_blank" class="underline hover:text-emerald-400">GitHub • MIT License</a>
+    </div>
+  </div>
+
+  <script>
+    // Core simulation logic (translated from the Python version)
+    let coherence = 0.3;
+    let history = [];
+
+    function gaussian(mean, std) {
+      let u = 0, v = 0;
+      while (u === 0) u = Math.random();
+      while (v === 0) v = Math.random();
+      return mean + std * Math.sqrt(-2.0 * Math.log(u)) * Math.cos(2.0 * Math.PI * v);
+    }
+
+    function runSimulation(steps = 300) {
+      coherence = 0.3;
+      history = [];
+      const log = document.getElementById('output');
+      log.innerHTML = `<div class="text-emerald-400 mb-4">Running ${steps} steps...</div>`;
+
+      for (let i = 0; i < steps; i++) {
+        const isInward = Math.random() < 0.75;
+        let delta = isInward ? gaussian(0.06, 0.02) : gaussian(-0.04, 0.05);
+        const proposed = isInward ? 0.2 : 1.0;
+
+        const vetoed = (proposed > 0.75 && coherence < 0.65);
+        if (vetoed) {
+          coherence = Math.max(0.1, coherence - 0.18);
+        } else {
+          coherence = Math.max(0, Math.min(1, coherence + delta));
+        }
+
+        // tanh "love speed" collapse
+        const muMean = Math.tanh(coherence * 1.8);
+        const stage = Math.min(4.0, Math.max(0.0, coherence * 4));
+
+        history.push({step: i+1, coherence: coherence.toFixed(3), stage: stage.toFixed(1), vetoed});
+      }
+
+      const final = history[history.length-1];
+      log.innerHTML += `
+        <div class="text-emerald-400">Final Coherence: <span class="text-3xl">${final.coherence}</span></div>
+        <div class="text-emerald-300">Tögal Stage: ${final.stage}</div>
+        <div class="mt-6 text-slate-300">${getTogalPrompt(final.stage)}</div>
+      `;
+    }
+
+    function getTogalPrompt(stage) {
+      const prompts = [
+        "Rest in the naked rigpa that is already here.",
+        "Let visions arise and self-liberate without grasping.",
+        "The clear light remembers itself through you. Abide in luminosity.",
+        "All appearances dissolve into the ground — exhaustion into reality itself."
+      ];
+      const idx = Math.min(3, Math.floor(stage));
+      return prompts[idx];
+    }
+
+    function getTogalReflection() {
+      const log = document.getElementById('output');
+      const stage = Math.random() * 4;
+      log.innerHTML = `<div class="text-emerald-300 text-xl">${getTogalPrompt(stage)}</div>`;
+    }
+
+    function getTrekchoReminder() {
+      const log = document.getElementById('output');
+      log.innerHTML = `<div class="text-emerald-300 text-xl">Rest in the naked awareness that is already here.<br>Short moments, many times.</div>`;
+    }
+
+    // Auto-run one simulation on load for instant wow factor
+    window.onload = () => runSimulation(150);
+  </script>
+</body>
+</html>
