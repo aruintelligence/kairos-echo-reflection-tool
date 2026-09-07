@@ -1,37 +1,52 @@
-# Kairos Echo — Python Coherence Simulator with Tögal & Trekchö Reflections
+# Kairos Echo
 
-[![Python](https://img.shields.io/badge/Python-3.8+-blue.svg)](https://www.python.org/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
-[![Stars](https://img.shields.io/github/stars/YOURUSERNAME/kairos-echo?style=social)](https://github.com/YOURUSERNAME/kairos-echo/stargazers)
+A reproducible Python coherence simulator and browser reflection tool with an explicit ethical guardrail.
 
-**A lightweight, reproducible Python coherence simulator** that models inner coherence through stochastic dynamics, an ethical "guardian veto" guardrail, and gentle **Dzogchen-inspired** contemplative reflections (Trekchö and Tögal).
+[![Python](https://img.shields.io/badge/Python-3.8+-2563eb?style=flat-square&logo=python)](https://www.python.org/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-16a34a?style=flat-square)](LICENSE)
+[![Repository stars](https://img.shields.io/github/stars/aruintelligence/kairos-echo-reflection-tool?style=flat-square)](https://github.com/aruintelligence/kairos-echo-reflection-tool/stargazers)
 
-Perfect for daily reflection, mindfulness experimentation, personal growth, and exploring simple dynamical systems blended with poetic awareness practices.
+> **Scope:** Kairos Echo is a poetic, contemplative research tool—not therapy, meditation instruction, spiritual authority, or a measurement of consciousness.
 
-> **Important**: This is a **poetic / contemplative reflection tool** — **not** literal enlightenment software, meditation training, or a deep spiritual simulator. Use lightly and mindfully.
+## What it includes
 
-### ✨ Key Features
-- Fully reproducible simulations with isolated RNG and deterministic reset
-- Ethical **guardian veto** — safely limits ambitious outward actions when coherence is low
-- Tögal stage proxy (0–4) mapped to the Four Visions with evocative reflections
-- Classic Trekchö reminders ("Short moments, many times")
-- Rich CLI modes: `run`, `summary`, `dashboard`, `togal`, `trekcho`, `log`
-- Interactive **Plotly dashboard** with optional HTML export
-- Defensive validation, resettable state, and stable JSON symbiosis logs
-- Single-file design — minimal dependencies
+- Deterministic simulations with seeded random-number generation
+- Coherence, distortion, and stability dynamics
+- A Guardian Veto™ that limits outward action when simulated coherence is low
+- Trekchö- and Tögal-inspired reflection prompts
+- CLI modes for runs, summaries, logging, and reflection
+- A standalone browser interface in `kairos-echo.html`
+- Optional Plotly visualization when Plotly is installed
 
-### 🚀 Quick Start
+## Quick start
 
 ```bash
-# Clone the repo
-git clone https://github.com/YOURUSERNAME/kairos-echo.git
-cd kairos-echo
-
-# Install dependencies
-pip install -r requirements.txt
-
-# Run examples
+git clone https://github.com/aruintelligence/kairos-echo-reflection-tool.git
+cd kairos-echo-reflection-tool
 python kairos_echo.py --mode run --steps 500 --seed 42
-python kairos_echo.py --mode togal
-python kairos_echo.py --mode dashboard --save-html dashboard.html
 python kairos_echo.py --mode summary
+python kairos_echo.py --mode togal
+```
+
+For dashboard mode:
+
+```bash
+python -m pip install plotly
+python kairos_echo.py --mode dashboard --save-html dashboard.html
+```
+
+You can also open `kairos-echo.html` directly in a modern browser.
+
+## Reproducibility
+
+Use a fixed `--seed` to reproduce a trajectory. Treat the values as simulator state—not clinical, psychological, or spiritual measurements.
+
+## Related projects
+
+- [Kairos Echo Inward Mirror](https://github.com/aruintelligence/kairos-echo-inward-mirror)
+- [Kairos Coherence Simulator](https://github.com/aruintelligence/kairos-coherence-simulator)
+- [ĀRU Intelligence public research](https://github.com/aruintelligence/aru-intelligence-ai)
+
+## License
+
+Released under the [MIT License](LICENSE). Dzogchen terms belong to living religious traditions and are used here respectfully as inspiration, without claiming lineage or authority.
