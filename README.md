@@ -2,6 +2,7 @@
 
 A reproducible Python coherence simulator and browser reflection tool with an explicit ethical guardrail.
 
+[![Release](https://img.shields.io/github/v/release/aruintelligence/kairos-echo-reflection-tool?style=flat-square)](https://github.com/aruintelligence/kairos-echo-reflection-tool/releases/latest)
 [![Python](https://img.shields.io/badge/Python-3.8+-2563eb?style=flat-square&logo=python)](https://www.python.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-16a34a?style=flat-square)](LICENSE)
 [![Repository stars](https://img.shields.io/github/stars/aruintelligence/kairos-echo-reflection-tool?style=flat-square)](https://github.com/aruintelligence/kairos-echo-reflection-tool/stargazers)
