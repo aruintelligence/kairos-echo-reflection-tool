@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Kairos Echo — Hardened Ethical Coherence Simulator
+Kairos Echo — Reproducible Coherence Simulator
 ==================================================
 
 A lightweight, reproducible single-file Python simulator that models inner
@@ -35,7 +35,7 @@ from __future__ import annotations
 import argparse
 import json
 import sys
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, replace
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Literal, Optional
@@ -132,6 +132,8 @@ class KairosEchoPrototype:
             "coherence": [],
             "mu_mean": [],
             "action": [],
+            "proposed_action": [],
+            "sampled_delta": [],
             "vetoed": [],
             "togal_stage": [],
         }
@@ -142,7 +144,7 @@ class KairosEchoPrototype:
         return float(np.mean(self.mu_field))
 
     def guardian_veto(self, proposed_score: float) -> bool:
-        """Ethical guardrail: veto high outward proposals when coherence is low."""
+        """Scripted veto on high outward proposals when coherence is low."""
         return (
             proposed_score > self.config.veto_threshold_score
             and self.coherence < self.config.veto_threshold_coherence
@@ -153,7 +155,9 @@ class KairosEchoPrototype:
         """Proxy [0–4] for the Four Visions of Tögal."""
         return float(min(4.0, max(0.0, coherence * 4.0)))
 
-    def step(self, action_type: InputActionType = "inward") -> tuple[float, float, bool, float]:
+    def step(
+        self, action_type: InputActionType = "inward", *, veto_enabled: bool = True
+    ) -> tuple[float, float, bool, float]:
         if action_type not in ("inward", "outward"):
             raise ValueError(f"Invalid action_type: {action_type!r}")
 
@@ -164,7 +168,7 @@ class KairosEchoPrototype:
             delta = self.rng.normal(self.config.outward_mean, self.config.outward_std)
             proposed_score = 1.0
 
-        vetoed = self.guardian_veto(proposed_score)
+        vetoed = veto_enabled and self.guardian_veto(proposed_score)
 
         if vetoed:
             self.coherence = max(self.config.veto_floor, self.coherence - self.config.veto_penalty)
@@ -179,13 +183,17 @@ class KairosEchoPrototype:
         self.history["coherence"].append(float(self.coherence))
         self.history["mu_mean"].append(float(mu_mean))
         self.history["action"].append(recorded_action)
+        self.history["proposed_action"].append(action_type)
+        self.history["sampled_delta"].append(float(delta))
         self.history["vetoed"].append(bool(vetoed))
         self.history["togal_stage"].append(float(togal_stage))
 
         self.steps += 1
         return self.coherence, mu_mean, vetoed, togal_stage
 
-    def run(self, steps: Optional[int] = None, reset: bool = True) -> Dict[str, List[Any]]:
+    def run(
+        self, steps: Optional[int] = None, reset: bool = True, *, veto_enabled: bool = True
+    ) -> Dict[str, List[Any]]:
         total_steps = steps if steps is not None else self.config.steps
         if total_steps < 1:
             raise ValueError("steps must be >= 1")
@@ -197,10 +205,9 @@ class KairosEchoPrototype:
             action: InputActionType = (
                 "inward" if self.rng.random() < self.config.inward_probability else "outward"
             )
-            self.step(action)
+            self.step(action, veto_enabled=veto_enabled)
 
         return self.history
-
     def summary(self) -> RunSummary:
         if not self.history["coherence"]:
             raise RuntimeError("No simulation history found. Run the simulator first.")
@@ -227,6 +234,67 @@ class KairosEchoPrototype:
             final_togal_stage=float(tog[-1]),
             config=asdict(self.config),
         )
+
+
+def audit_guardian(config: SimulationConfig, replicates: int = 32) -> Dict[str, Any]:
+    """Compare penalized veto, zero-penalty veto, and no veto on paired events.
+
+    Both policies use the same seeded action and delta stream. In this model the
+    RNG is consumed regardless of veto, so state changes cannot change draws.
+    The result measures simulated coherence only, not ethics or real safety.
+    """
+    config.validate()
+    if replicates < 1:
+        raise ValueError("replicates must be >= 1")
+
+    runs = []
+    for offset in range(replicates):
+        trial_config = replace(config, seed=config.seed + offset)
+        with_veto = KairosEchoPrototype(trial_config).run(veto_enabled=True)
+        zero_penalty = KairosEchoPrototype(
+            replace(trial_config, veto_penalty=0.0)
+        ).run(veto_enabled=True)
+        without_veto = KairosEchoPrototype(trial_config).run(veto_enabled=False)
+        for key in ("proposed_action", "sampled_delta"):
+            if with_veto[key] != without_veto[key] or zero_penalty[key] != without_veto[key]:
+                raise RuntimeError(f"paired event streams differ: {key}")
+
+        veto_mean = float(np.mean(with_veto["coherence"]))
+        zero_penalty_mean = float(np.mean(zero_penalty["coherence"]))
+        no_veto_mean = float(np.mean(without_veto["coherence"]))
+        runs.append({
+            "seed": trial_config.seed,
+            "veto_count": int(sum(with_veto["vetoed"])),
+            "zero_penalty_veto_count": int(sum(zero_penalty["vetoed"])),
+            "mean_coherence_with_veto": veto_mean,
+            "mean_coherence_zero_penalty_veto": zero_penalty_mean,
+            "mean_coherence_without_veto": no_veto_mean,
+            "mean_difference_with_minus_without": veto_mean - no_veto_mean,
+            "mean_difference_zero_penalty_minus_without": zero_penalty_mean - no_veto_mean,
+            "final_coherence_with_veto": with_veto["coherence"][-1],
+            "final_coherence_zero_penalty_veto": zero_penalty["coherence"][-1],
+            "final_coherence_without_veto": without_veto["coherence"][-1],
+        })
+
+    return {
+        "scope": "paired simulation of veto with configured penalty, veto with zero penalty, and no veto; not an ethical or safety measure",
+        "config": asdict(config),
+        "replicates": replicates,
+        "paired_on": ["proposed_action", "sampled_delta"],
+        "mean_difference_with_minus_without": float(
+            np.mean([run["mean_difference_with_minus_without"] for run in runs])
+        ),
+        "mean_difference_zero_penalty_minus_without": float(
+            np.mean([run["mean_difference_zero_penalty_minus_without"] for run in runs])
+        ),
+        "seeds_with_lower_mean_under_veto": sum(
+            run["mean_difference_with_minus_without"] < 0 for run in runs
+        ),
+        "seeds_with_higher_mean_under_zero_penalty_veto": sum(
+            run["mean_difference_zero_penalty_minus_without"] > 0 for run in runs
+        ),
+        "runs": runs,
+    }
 
 
 def get_togal_label(stage: float) -> str:
@@ -418,11 +486,11 @@ def print_summary(summary: RunSummary) -> None:
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description="Kairos Echo — Hardened Ethical Coherence Simulator"
+        description="Kairos Echo — Reproducible Coherence Simulator"
     )
     parser.add_argument(
         "--mode",
-        choices=["run", "summary", "dashboard", "togal", "trekcho", "log"],
+        choices=["run", "summary", "dashboard", "togal", "trekcho", "log", "audit"],
         default="run",
         help="Operation mode",
     )
@@ -447,6 +515,14 @@ def parse_args() -> argparse.Namespace:
         default="symbiosis_log.json",
         help="Output path for JSON log",
     )
+    parser.add_argument(
+        "--replicates", type=int, default=32,
+        help="Number of paired seeds in audit mode",
+    )
+    parser.add_argument(
+        "--audit-file", type=str, default="",
+        help="Optional path to save the audit JSON",
+    )
     return parser.parse_args()
 
 
@@ -460,6 +536,18 @@ def main() -> int:
             steps=args.steps,
             inward_probability=args.inward_probability,
         )
+
+        if args.mode == "audit":
+            report = audit_guardian(config, args.replicates)
+            print(json.dumps(report, indent=2, ensure_ascii=False, allow_nan=False))
+            if args.audit_file:
+                path = Path(args.audit_file).expanduser().resolve()
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_text(
+                    json.dumps(report, indent=2, ensure_ascii=False, allow_nan=False) + "\n",
+                    encoding="utf-8",
+                )
+            return 0
 
         proto = KairosEchoPrototype(config)
         history = proto.run(reset=True)
